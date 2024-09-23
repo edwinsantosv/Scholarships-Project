@@ -12,7 +12,8 @@ def show_dash():
 
     # Cargar el archivo CSV y ordenar por "ID"
     df = pd.read_csv("app/final_df.csv").iloc[:, 1:].sort_values(by="ID", ascending=True)
-
+    # Filtrar las columnas que son de tipo string
+    string_columns = df.select_dtypes(include='object').columns
     st.sidebar.subheader('Filtros')
 
 
@@ -46,8 +47,13 @@ def show_dash():
             default=[]  # Sin selección por defecto
         )
 
+         # Entrada de búsqueda por palabra clave en la barra lateral
+        keyword = st.text_input("Escribe lo que sea para que se filtre")
+
         # Botón para aplicar los filtros
         submit_button = st.form_submit_button(label='Aplicar Filtros')
+
+    
 
     # Si el botón es presionado, aplicar los filtros
     if submit_button:
@@ -60,6 +66,23 @@ def show_dash():
             df = df[df['study_experience_required'].isin(study_experience_filter)]
         if country_experience_filter:
             df = df[df['country'].isin(country_experience_filter)]
+
+        if keyword:
+            # Crear una columna para almacenar el porcentaje de match
+            df['match_percentage'] = 0
+
+            # Iterar sobre las filas y calcular el porcentaje de coincidencia
+            for idx, row in df.iterrows():
+                # Contar cuántas columnas contienen la palabra clave (case-insensitive)
+                match_count = sum(keyword.lower() in str(row[col]).lower() for col in string_columns)
+                
+                # Calcular el porcentaje de coincidencia (número de columnas que contienen la palabra / total de columnas de texto)
+                match_percentage = (match_count / len(string_columns)) * 100
+                df.at[idx, 'match_percentage'] = match_percentage
+
+            # Ordenar el DataFrame por porcentaje de coincidencia en orden descendente
+            df = df.sort_values(by='match_percentage', ascending=False)
+            df = df[df['match_percentage']>0]
 
     # Contar el número de filas en el DataFrame
     rows_num = len(df)
@@ -130,16 +153,20 @@ def show_dash():
         # Contar becas por país
     country_counts = df['country'].value_counts()
 
-    # Mapa Coroplético de becas por país (Filled Map)
+
+    # Optimización del mapa coroplético (choropleth map)
     fig_map = px.choropleth(
-        df, 
+        df,
         locations='country',  # Columna que contiene los nombres de los países
         locationmode='country names',  # Indicamos que la columna contiene nombres de países
         color=df['country'].map(country_counts),  # Mapear el conteo de becas a los países
         hover_name='country',  # Mostrar el nombre del país en el hover
         title="Cantidad de Becas por País",
-        #color_continuous_scale=px.colors.sequential.Plasma,  # Escala de colores
-        labels={'color': 'Cantidad de Becas'}
+        color_continuous_scale=px.colors.sequential.Plasma,  # Escala de colores
+        labels={'color': 'Cantidad de Becas'},
+        scope="world",  # Limitar la vista al mapa mundial
+        #template="plotly_dark",  # Mejorar el contraste
+        projection="natural earth"  # Usar una proyección que se vea mejor
     )
 
     # Crear dos columnas en la primera fila
