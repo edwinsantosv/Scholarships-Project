@@ -1,0 +1,10 @@
+df_0=pd.read_csv('scholarships.csv')
+df_0.head()
+maxid=df.ID.max()
+maxid
+pending_scholar_df= df_0[
+    (df_0['Unnamed: 0'].isin(df[df['Overview'].isna()].ID))|
+    (df_0['Unnamed: 0']>=maxid)    
+    ]
+pending_scholar_df
+pending_scholar_df.to_csv("scholarships_pending2.csv",index=False)
