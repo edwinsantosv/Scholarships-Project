@@ -47,6 +47,13 @@ def show_dash():
             default=[]  # Sin selección por defecto
         )
 
+        # Multiselect para 'Becas disponibles' (default: sin selección)
+        User_filter = st.multiselect(
+            'Usuario', 
+            options=df['User_Filter'].unique(),
+            default=[]  # Sin selección por defecto
+        )
+
          # Entrada de búsqueda por palabra clave en la barra lateral
         keyword = st.text_input("Escribe lo que sea para que se filtre")
 
@@ -57,6 +64,8 @@ def show_dash():
 
     # Si el botón es presionado, aplicar los filtros
     if submit_button:
+        if User_filter:
+            df = df[df['User_Filter'].isin(User_filter)]
         # Aplicar filtros solo si hay selección en los multiselect
         if scholarship_type_filter:
             df = df[df['Scholarship_Type'].isin(scholarship_type_filter)]
